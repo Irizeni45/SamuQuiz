@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SamQuiz — Painel de estudos</title>
+<style>
+  :root{
+    --bg:#0a0e1a;
+    --panel:#0f1425;
+    --card:#141a30;
+    --card-hover:#181f3a;
+    --border:#232b48;
+    --text:#e9ecf7;
+    --text-dim:#8b93b3;
+    --accent1:#7c5cff;
+    --accent2:#4f7dff;
+    --danger:#ff5d73;
+    --danger-bg:#2a1420;
+    --success:#33d69f;
+    --warn:#f5b942;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;
+    display:flex;
+    min-height:100vh;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:250px;
+    flex-shrink:0;
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    padding:20px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+  }
+  .brand{
+    font-size:20px;
+    font-weight:800;
+    padding:4px 6px 0;
+    letter-spacing:-0.02em;
+  }
+  .brand span{
+    background:linear-gradient(90deg,var(--accent1),var(--accent2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .nav-group{display:flex;flex-direction:column;gap:4px;}
+  .nav-btn{
+    display:flex;align-items:center;gap:10px;
+    background:transparent;border:none;color:var(--text-dim);
+    padding:10px 12px;border-radius:10px;text-align:left;
+    font-size:14.5px;font-weight:500;
+    transition:background .15s, color .15s;
+  }
+  .nav-btn:hover{background:var(--card);color:var(--text);}
+  .nav-btn.active{background:var(--card);color:var(--text);}
+  .nav-btn .ic{width:18px;text-align:center;}
+
+  .sidebar-label{
+    font-size:11px;color:var(--text-dim);
+    padding:0 12px;margin-top:4px;
+    font-weight:600;
+  }
+  .activity-link{
+    display:block;padding:8px 12px;border-radius:10px;
+    color:var(--text-dim);font-size:13px;line-height:1.4;
+    border:none;background:transparent;width:100%;text-align:left;
+  }
+  .activity-link:hover{background:var(--card);color:var(--text);}
+  .activity-link b{display:block;color:var(--text);font-weight:600;font-size:13px;}
+
+  .danger-btn{
+    margin-top:auto;
+    background:var(--danger-bg);
+    color:var(--danger);
+    border:1px solid rgba(255,93,115,.35);
+    padding:10px 12px;border-radius:10px;
+    font-weight:600;font-size:13.5px;
+  }
+  .danger-btn:hover{background:rgba(255,93,115,.18);}
+  .ghost-btn{
+    background:transparent;border:1px solid var(--border);
+    color:var(--text-dim);padding:9px 12px;border-radius:10px;
+    font-size:13px;font-weight:500;
+  }
+  .ghost-btn:hover{color:var(--text);border-color:#3a4470;}
+
+  /* ---------- Main ---------- */
+  main{flex:1;padding:38px 44px;max-width:1080px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-0.02em;}
+  .subtitle{color:var(--text-dim);font-size:15px;margin:0 0 26px;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:34px;}
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:16px 18px;
+  }
+  .stat-card .lbl{font-size:12.5px;color:var(--text-dim);margin-bottom:10px;}
+  .stat-card .val{font-size:26px;font-weight:800;}
+
+  h2{font-size:19px;margin:0 0 4px;}
+  .section-sub{color:var(--text-dim);font-size:13.5px;margin:0 0 16px;}
+
+  .subject-block{margin-bottom:26px;}
+  .subject-title{font-size:15px;font-weight:700;margin:0 0 10px;color:#c8ceea;}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .act-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;display:flex;flex-direction:column;gap:10px;
+  }
+  .tag{
+    display:inline-block;font-size:11.5px;font-weight:600;color:#c9c0ff;
+    background:rgba(124,92,255,.15);border:1px solid rgba(124,92,255,.3);
+    padding:3px 9px;border-radius:999px;width:fit-content;
+  }
+  .act-card h3{margin:0;font-size:16.5px;}
+  .act-meta{color:var(--text-dim);font-size:12.5px;}
+  .act-actions{display:flex;gap:8px;margin-top:4px;}
+  .btn{
+    border:none;border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;
+  }
+  .btn-primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-secondary{background:var(--panel);border:1px solid var(--border);color:var(--text-dim);}
+  .btn-secondary:hover{color:var(--text);}
+
+  .empty{
+    border:1px dashed var(--border);border-radius:var(--radius);
+    padding:26px;text-align:center;color:var(--text-dim);font-size:14px;
+  }
+
+  /* ---------- Import view ---------- */
+  textarea{
+    width:100%;min-height:260px;background:var(--panel);color:var(--text);
+    border:1px solid var(--border);border-radius:var(--radius);padding:14px;
+    font-family:"Cascadia Code","Consolas",monospace;font-size:13px;line-height:1.55;
+    resize:vertical;
+  }
+  .import-row{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+  .file-drop{
+    border:1px dashed var(--border);border-radius:var(--radius);
+    padding:14px 16px;color:var(--text-dim);font-size:13.5px;
+    display:flex;align-items:center;gap:10px;flex:1;min-width:240px;
+  }
+  input[type=file]{color:var(--text-dim);font-size:13px;}
+  .log-box{
+    margin-top:16px;background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px 16px;font-size:13.5px;
+    max-height:220px;overflow-y:auto;display:none;
+  }
+  .log-ok{color:var(--success);}
+  .log-err{color:var(--danger);}
+  details{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 16px;margin-top:18px;
+  }
+  details summary{cursor:pointer;font-weight:600;font-size:14px;}
+  pre{
+    background:#080b14;border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;font-size:12.5px;overflow-x:auto;margin:10px 0 0;line-height:1.55;
+  }
+  .gab-tool{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap;}
+  select,input[type=text]{
+    background:var(--panel);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:8px 10px;font-size:13.5px;
+  }
+  code.pill{
+    background:#080b14;border:1px solid var(--border);padding:6px 10px;border-radius:8px;
+    font-size:13px;color:#c9c0ff;
+  }
+
+  /* ---------- Quiz view ---------- */
+  #view-quiz{
+    display:none;
+    padding:0;
+    background:var(--bg);
+    min-height:100vh;
+    flex-direction:column;
+  }
+  #view-quiz.active{ display:flex; }
+
+  .quiz-topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 28px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .quiz-back-btn{
+    display:flex;align-items:center;gap:7px;
+    background:var(--card);border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 14px;border-radius:9px;font-size:13.5px;font-weight:500;
+  }
+  .quiz-back-btn:hover{color:var(--text);}
+  .quiz-topbar-info{text-align:right;}
+  .quiz-act-name{font-weight:700;font-size:15px;color:var(--text);}
+  .quiz-mat-name{font-size:12px;color:var(--text-dim);}
+
+  .quiz-progress-bar-wrap{
+    height:4px;background:var(--border);flex-shrink:0;
+  }
+  .quiz-progress-bar-fill{
+    height:4px;
+    background:linear-gradient(90deg,var(--accent1),var(--accent2));
+    transition:width .35s ease;
+  }
+
+  .quiz-body{
+    flex:1;display:flex;justify-content:center;align-items:flex-start;
+    padding:32px 20px 40px;overflow-y:auto;
+  }
+
+  .quiz-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:28px 30px;
+    width:100%;max-width:780px;
+    display:flex;flex-direction:column;gap:0;
+  }
+
+  .quiz-card-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .quiz-qnum{
+    font-size:12px;font-weight:700;color:var(--accent1);
+    background:rgba(124,92,255,.13);
+    border:1px solid rgba(124,92,255,.25);
+    padding:4px 11px;border-radius:999px;
+    letter-spacing:.04em;
+  }
+  .quiz-acertos-live{
+    font-size:13px;color:var(--text-dim);
+  }
+  .quiz-acertos-live b{ color:var(--success); }
+
+  .enunciado-box{
+    background:#0c1020;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 18px;
+    margin-bottom:20px;
+    font-size:14px;line-height:1.7;
+    color:#b8bedd;font-style:italic;
+  }
+
+  .pergunta-text{
+    font-size:17.5px;font-weight:600;
+    margin:0 0 22px;line-height:1.55;color:var(--text);
+  }
+
+  .quiz-img{
+    max-width:100%;border-radius:10px;margin-bottom:18px;
+    display:block;border:1px solid var(--border);
+  }
+
+  .opt-list{display:flex;flex-direction:column;gap:9px;}
+  .opt-btn{
+    display:flex;gap:13px;align-items:center;text-align:left;
+    background:var(--card);border:2px solid var(--border);border-radius:12px;
+    padding:13px 16px;font-size:14.5px;color:var(--text);
+    transition:border-color .12s, background .12s;
+  }
+  .opt-btn:hover:not(.locked):not(.selected){
+    border-color:#3a4470;background:var(--card-hover);
+  }
+  .opt-btn.selected{
+    border-color:var(--accent1);
+    background:rgba(124,92,255,.1);
+  }
+  .opt-btn.selected .opt-letter{
+    background:var(--accent1);color:#fff;
+  }
+  .opt-letter{
+    width:28px;height:28px;flex-shrink:0;border-radius:8px;
+    background:var(--panel);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:700;color:var(--text-dim);
+    transition:background .12s, color .12s;
+    border:1px solid var(--border);
+  }
+  .opt-btn.correct{border-color:var(--success);background:rgba(51,214,159,.1);}
+  .opt-btn.correct .opt-letter{background:var(--success);color:#031a0e;border-color:var(--success);}
+  .opt-btn.wrong{border-color:var(--danger);background:rgba(255,93,115,.1);}
+  .opt-btn.wrong .opt-letter{background:var(--danger);color:#fff;border-color:var(--danger);}
+  .opt-btn.locked{ cursor:default; }
+  .opt-btn.dimmed{ opacity:.45; }
+
+  .quiz-card-footer{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:24px;padding-top:18px;border-top:1px solid var(--border);
+  }
+  .quiz-acertos-footer{font-size:13.5px;color:var(--text-dim);}
+  .quiz-acertos-footer b{color:var(--text);}
+
+  .btn-responder{
+    background:linear-gradient(90deg,var(--accent1),var(--accent2));
+    color:#fff;border:none;border-radius:10px;
+    padding:11px 26px;font-size:14.5px;font-weight:700;
+    opacity:.4;pointer-events:none;transition:opacity .15s;
+  }
+  .btn-responder.ready{ opacity:1; pointer-events:auto; }
+  .btn-responder.ready:hover{ filter:brightness(1.08); }
+  .btn-responder.next-mode{
+    background:var(--card);border:1px solid var(--border);
+    color:var(--text);opacity:1;pointer-events:auto;
+  }
+  .btn-responder.next-mode:hover{ background:var(--card-hover); }
+
+  .result-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:30px;text-align:center;max-width:420px;margin:0 auto;
+  }
+  .result-nota{font-size:44px;font-weight:800;margin:6px 0 2px;}
+  .result-sub{color:var(--text-dim);font-size:14px;}
+  .result-bars{display:flex;gap:20px;justify-content:center;margin:20px 0;}
+  .result-bars div span{display:block;font-size:22px;font-weight:800;}
+  .result-bars div small{color:var(--text-dim);font-size:12px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);}
+  th{color:var(--text-dim);font-weight:600;font-size:12.5px;}
+
+  @media (max-width:760px){
+    body{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:relative;}
+    main{padding:24px;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">Sam<span>Quiz</span> 🎓</div>
+
+  <div class="nav-group">
+    <button class="nav-btn active" data-view="dashboard"><span class="ic">🏠</span> Início</button>
+    <button class="nav-btn" data-view="import"><span class="ic">📥</span> Importar questões</button>
+    <button class="nav-btn" data-view="history"><span class="ic">📊</span> Histórico</button>
+  </div>
+
+  <div>
+    <div class="sidebar-label">ATIVIDADES</div>
+    <div id="sidebarActivities"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="sidebar-label" style="padding:0;">DADOS</div>
+    <button class="ghost-btn" id="btnExport">Exportar backup (.json)</button>
+    <label class="ghost-btn" style="text-align:center;">
+      Importar backup
+      <input type="file" id="fileBackup" accept="application/json" style="display:none;">
+    </label>
+    <button class="danger-btn" id="btnWipe">Apagar banco local</button>
+  </div>
+</aside>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dashboard">
+    <h1>Seu painel</h1>
+    <p class="subtitle">Organize as questões que você recebe e transforme tudo em treino.</p>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="lbl">Questões respondidas</div><div class="val" id="statAnswered">0</div></div>
+      <div class="stat-card"><div class="lbl">Acertos</div><div class="val" id="statCorrect">0</div></div>
+      <div class="stat-card"><div class="lbl">Erros</div><div class="val" id="statWrong">0</div></div>
+      <div class="stat-card"><div class="lbl">Nota média</div><div class="val" id="statAvg">—</div></div>
+    </div>
+
+    <h2>Atividades</h2>
+    <p class="section-sub">Separadas por matéria e prontas para serem embaralhadas.</p>
+    <div id="dashboardActivities"></div>
+  </section>
+
+  <!-- IMPORT -->
+  <section class="view" id="view-import">
+    <h1>Importar questões</h1>
+    <p class="subtitle">Cole o texto que você recebeu (com gabarito codificado), ou selecione arquivos .txt da sua pasta.</p>
+
+    <textarea id="importText" placeholder="Cole aqui o bloco de questões..."></textarea>
+
+    <div class="import-row">
+      <button class="btn btn-primary" id="btnParseText">Importar deste texto</button>
+      <label class="file-drop">
+        📁 Selecionar arquivo(s) .txt da pasta de questões
+        <input type="file" id="fileQuestions" accept=".txt" multiple style="display:none;">
+      </label>
+    </div>
+
+    <div class="log-box" id="importLog"></div>
+
+    <details>
+      <summary>Formato aceito (o mesmo que a Claude deve usar para te enviar questões)</summary>
+      <pre id="formatSpec"></pre>
+      <div class="gab-tool">
+        <span style="font-size:13.5px;color:var(--text-dim);">Gerar código de gabarito para a letra:</span>
+        <select id="gabLetter"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select>
+        <button class="btn btn-secondary" id="btnGenGab">Gerar</button>
+        <code class="pill" id="gabOutput">—</code>
+      </div>
+    </details>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="view-history">
+    <h1>Histórico</h1>
+    <p class="subtitle">Todas as tentativas registradas, mais recentes primeiro.</p>
+    <div id="historyBody"></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="view" id="view-quiz">
+    <div class="quiz-topbar">
+      <button class="quiz-back-btn" id="btnQuizBack">← Voltar</button>
+      <div class="quiz-topbar-info">
+        <div class="quiz-act-name" id="quizTitle">Quiz</div>
+        <div class="quiz-mat-name" id="quizMateria"></div>
+      </div>
+    </div>
+    <div class="quiz-progress-bar-wrap">
+      <div class="quiz-progress-bar-fill" id="quizProgressBar" style="width:0%"></div>
+    </div>
+    <div class="quiz-body">
+      <div class="quiz-card">
+        <div class="quiz-card-header">
+          <span class="quiz-qnum" id="quizQNum">QUESTÃO 1 DE 1</span>
+          <span class="quiz-acertos-live" id="quizAcertosLive">Acertos: <b>0</b></span>
+        </div>
+        <div id="enunciadoBox"></div>
+        <p class="pergunta-text" id="perguntaText"></p>
+        <img id="quizImg" class="quiz-img" style="display:none;">
+        <div class="opt-list" id="optList"></div>
+        <div class="quiz-card-footer">
+          <span class="quiz-acertos-footer">Acertos nesta tentativa: <b id="quizAcertosFooter">0</b></span>
+          <button class="btn-responder" id="btnResponder">Responder</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="view" id="view-result">
+    <h1>Resultado</h1>
+    <div class="result-card">
+      <div class="result-sub" id="resultActName"></div>
+      <div class="result-nota" id="resultNota">—</div>
+      <div class="result-sub">nota final</div>
+      <div class="result-bars">
+        <div><span id="resAcertos" style="color:var(--success);">0</span><small>acertos</small></div>
+        <div><span id="resErros" style="color:var(--danger);">0</span><small>erros</small></div>
+      </div>
+      <button class="btn btn-primary" id="btnBackDash">Voltar ao painel</button>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ============ CRIPTOGRAFIA DO GABARITO ============
+   O gabarito nunca aparece como uma letra "solta" no texto importado.
+   Ele é convertido assim: ROT13(letra) -> "GAB:<letra_rot13>" -> Base64.
+   Isso é revertido automaticamente pelo app ao carregar as questões. */
+function rot13(ch){
+  if(!/[A-Za-z]/.test(ch)) return ch;
+  const base = (ch === ch.toUpperCase()) ? 65 : 97;
+  return String.fromCharCode((ch.charCodeAt(0)-base+13)%26+base);
+}
+function encodeGab(letter){ return btoa('GAB:'+rot13(letter.toUpperCase())); }
+function decodeGab(code){
+  try{
+    const s = atob((code||'').trim());
+    const m = s.match(/^GAB:([A-Za-z])$/);
+    if(!m) return null;
+    return rot13(m[1]).toUpperCase();
+  }catch(e){ return null; }
+}
+
+/* ============ ESTADO / PERSISTÊNCIA ============ */
+const STORAGE_KEY = 'samquiz_state_v1';
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { subjects: {} };
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+let state = loadState();
+
+function ensureActivity(materia, atividade){
+  if(!state.subjects[materia]) state.subjects[materia] = {};
+  if(!state.subjects[materia][atividade]) state.subjects[materia][atividade] = { questions: [], attempts: [] };
+  return state.subjects[materia][atividade];
+}
+
+/* ============ NAVEGAÇÃO ============ */
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+}
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ showView(btn.dataset.view); renderAll(); });
+});
+
+/* ============ HELPERS ============ */
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function nl2br(s){ return escapeHtml(s).replace(/\n/g,'<br>'); }
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function allAttempts(){
+  const list = [];
+  for(const materia in state.subjects){
+    for(const ativ in state.subjects[materia]){
+      const a = state.subjects[materia][ativ];
+      a.attempts.forEach(at=>list.push(Object.assign({materia,ativ},at)));
+    }
+  }
+  return list.sort((a,b)=> new Date(b.date)-new Date(a.date));
+}
+
+/* ============ RENDER: DASHBOARD ============ */
+function renderDashboard(){
+  const attempts = allAttempts();
+  const answered = attempts.reduce((s,a)=>s+a.total,0);
+  const acertos = attempts.reduce((s,a)=>s+a.acertos,0);
+  const erros = attempts.reduce((s,a)=>s+a.erros,0);
+  document.getElementById('statAnswered').textContent = answered;
+  document.getElementById('statCorrect').textContent = acertos;
+  document.getElementById('statWrong').textContent = erros;
+  document.getElementById('statAvg').textContent = attempts.length
+    ? (attempts.reduce((s,a)=>s+a.nota,0)/attempts.length).toFixed(1)+'/10'
+    : '—';
+
+  const box = document.getElementById('dashboardActivities');
+  box.innerHTML = '';
+  const subjects = Object.keys(state.subjects);
+  if(subjects.length===0){
+    box.innerHTML = '<div class="empty">Nenhuma atividade ainda. Vá em "Importar questões" para começar.</div>';
+  } else {
+    subjects.forEach(materia=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'subject-block';
+      const acts = Object.keys(state.subjects[materia]);
+      wrap.innerHTML = `<div class="subject-title">${escapeHtml(materia)}</div><div class="card-grid" id="grid-${cssId(materia)}"></div>`;
+      box.appendChild(wrap);
+      const grid = wrap.querySelector('.card-grid');
+      acts.forEach(ativ=>{
+        const a = state.subjects[materia][ativ];
+        const lastNota = a.attempts.length ? a.attempts[a.attempts.length-1].nota.toFixed(1) : '—';
+        const card = document.createElement('div');
+        card.className = 'act-card';
+        card.innerHTML = `
+          <span class="tag">${escapeHtml(materia)}</span>
+          <h3>${escapeHtml(ativ)}</h3>
+          <div class="act-meta">${a.questions.length} questões · ${a.attempts.length} tentativas · Nota ${lastNota}/10</div>
+          <div class="act-actions">
+            <button class="btn btn-primary" data-play>Jogar</button>
+            <button class="btn btn-secondary" data-reset>Resetar tentativas</button>
+          </div>`;
+        card.querySelector('[data-play]').addEventListener('click', ()=>startQuiz(materia,ativ));
+        card.querySelector('[data-reset]').addEventListener('click', ()=>{
+          if(confirm(`Zerar as tentativas de "${ativ}"?`)){ a.attempts=[]; saveState(); renderAll(); }
+        });
+        grid.appendChild(card);
+      });
+    });
+  }
+}
+function cssId(s){ return s.replace(/[^a-z0-9]/gi,'_'); }
+
+/* ============ RENDER: SIDEBAR ============ */
+function renderSidebar(){
+  const box = document.getElementById('sidebarActivities');
+  box.innerHTML='';
+  const subjects = Object.keys(state.subjects);
+  if(subjects.length===0){
+    box.innerHTML = '<div style="padding:6px 12px;color:var(--text-dim);font-size:12.5px;">Nenhuma ainda</div>';
+    return;
+  }
+  subjects.forEach(materia=>{
+    Object.keys(state.subjects[materia]).forEach(ativ=>{
+      const btn = document.createElement('button');
+      btn.className = 'activity-link';
+      btn.innerHTML = `<b>${escapeHtml(ativ)}</b>${escapeHtml(materia)}`;
+      btn.addEventListener('click', ()=>startQuiz(materia,ativ));
+      box.appendChild(btn);
+    });
+  });
+}
+
+/* ============ RENDER: HISTORY ============ */
+function renderHistory(){
+  const box = document.getElementById('historyBody');
+  const attempts = allAttempts();
+  if(attempts.length===0){
+    box.innerHTML = '<div class="empty">Nenhuma tentativa registrada ainda.</div>';
+    return;
+  }
+  let rows = attempts.map(a=>`
+    <tr>
+      <td>${escapeHtml(a.ativ)}</td>
+      <td>${escapeHtml(a.materia)}</td>
+      <td>${new Date(a.date).toLocaleString('pt-BR')}</td>
+      <td>${a.acertos}/${a.total}</td>
+      <td>${a.nota.toFixed(1)}/10</td>
+    </tr>`).join('');
+  box.innerHTML = `<table>
+    <thead><tr><th>Atividade</th><th>Matéria</th><th>Data</th><th>Acertos</th><th>Nota</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function renderAll(){ renderDashboard(); renderSidebar(); renderHistory(); }
+
+/* ============ IMPORTAÇÃO / PARSER ============ */
+function normalizeKey(line){
+  return line.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+}
+function parseQuestionBlocks(rawText, logFn){
+  const lines = rawText.replace(/\r\n/g,'\n').split('\n');
+  let materia = 'Geral', atividade = 'Sem título';
+  let i = 0;
+  let importedCount = 0, errorCount = 0;
+
+  // cabeçalho (MATERIA / ATIVIDADE) antes da primeira questão
+  while(i < lines.length){
+    const norm = normalizeKey(lines[i]);
+    if(norm.startsWith('MATERIA:')){ materia = lines[i].split(':').slice(1).join(':').trim() || materia; i++; continue; }
+    if(norm.startsWith('ATIVIDADE:')){ atividade = lines[i].split(':').slice(1).join(':').trim() || atividade; i++; continue; }
+    if(norm.startsWith('QUESTAO')) break;
+    i++;
+  }
+
+  while(i < lines.length){
+    const norm = normalizeKey(lines[i]);
+    if(!norm.startsWith('QUESTAO')){ i++; continue; }
+    i++; // pula linha "QUESTÃO"
+    const block = { enunciado:'', pergunta:'', imagem:'', options:[], gab:'' };
+    let mode = null; // 'enunciado' | 'pergunta'
+    const enunciadoLines = [];
+    while(i < lines.length){
+      const rawLine = lines[i];
+      const n = normalizeKey(rawLine);
+      if(n.startsWith('FIM')){ i++; break; }
+      if(n.startsWith('ENUNCIADO:')){
+        mode='enunciado';
+        enunciadoLines.push(rawLine.split(':').slice(1).join(':').trim());
+        i++; continue;
+      }
+      if(n.startsWith('PERGUNTA:')){
+        mode=null;
+        block.pergunta = rawLine.split(':').slice(1).join(':').trim();
+        i++; continue;
+      }
+      if(n.startsWith('IMAGEM:')){
+        mode=null;
+        block.imagem = rawLine.split(':').slice(1).join(':').trim();
+        i++; continue;
+      }
+      if(n.startsWith('GABARITO:')){
+        mode=null;
+        block.gab = rawLine.split(':').slice(1).join(':').trim();
+        i++; continue;
+      }
+      const optMatch = rawLine.match(/^\s*([A-Ea-e])\)\s*(.+)$/);
+      if(optMatch){
+        mode=null;
+        block.options.push({ letter: optMatch[1].toUpperCase(), text: optMatch[2].trim() });
+        i++; continue;
+      }
+      if(mode==='enunciado' && rawLine.trim()!==''){ enunciadoLines.push(rawLine); }
+      i++;
+    }
+    block.enunciado = enunciadoLines.join('\n').trim();
+
+    // validação
+    const errors = [];
+    if(!block.pergunta) errors.push('sem PERGUNTA');
+    if(block.options.length < 2) errors.push('menos de 2 alternativas');
+    const decoded = decodeGab(block.gab);
+    if(!decoded) errors.push('GABARITO inválido/não decodifica');
+    else if(!block.options.some(o=>o.letter===decoded)) errors.push(`GABARITO aponta para "${decoded}", que não existe nas alternativas`);
+
+    if(errors.length){
+      errorCount++;
+      logFn(`Questão ${importedCount+errorCount}: erro — ${errors.join('; ')}`, false);
+      continue;
+    }
+
+    const act = ensureActivity(materia, atividade);
+    act.questions.push({
+      enunciado: block.enunciado,
+      pergunta: block.pergunta,
+      imagem: block.imagem,
+      options: block.options,
+      gab: block.gab
+    });
+    importedCount++;
+  }
+  return { importedCount, errorCount, materia, atividade };
+}
+
+function runImport(text){
+  const logBox = document.getElementById('importLog');
+  logBox.style.display='block';
+  logBox.innerHTML='';
+  const logFn = (msg, ok)=>{
+    const p = document.createElement('div');
+    p.className = ok? 'log-ok':'log-err';
+    p.textContent = (ok?'✓ ':'✗ ')+msg;
+    logBox.appendChild(p);
+  };
+  const result = parseQuestionBlocks(text, logFn);
+  if(result.importedCount>0){
+    logFn(`${result.importedCount} questão(ões) importada(s) em "${result.atividade}" (${result.materia}).`, true);
+    saveState();
+    renderAll();
+  }
+  if(result.importedCount===0 && result.errorCount===0){
+    logFn('Nenhum bloco QUESTÃO...FIM encontrado no texto.', false);
+  }
+}
+
+document.getElementById('btnParseText').addEventListener('click', ()=>{
+  const text = document.getElementById('importText').value;
+  if(!text.trim()) return;
+  runImport(text);
+});
+document.getElementById('fileQuestions').addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files);
+  files.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = ()=> runImport(reader.result);
+    reader.readAsText(f, 'utf-8');
+  });
+  e.target.value='';
+});
+
+/* gerador manual de gabarito */
+document.getElementById('btnGenGab').addEventListener('click', ()=>{
+  const letter = document.getElementById('gabLetter').value;
+  document.getElementById('gabOutput').textContent = encodeGab(letter);
+});
+
+document.getElementById('formatSpec').textContent =
+`MATERIA: Português
+ATIVIDADE: Predicado — Nível difícil
+
+QUESTAO
+ENUNCIADO: (opcional — use para o texto-base, contexto ou trecho de apoio,
+como nas questões do ENEM. Pode ter várias linhas.)
+PERGUNTA: Qual é o predicado da oração abaixo?
+IMAGEM: (opcional — link direto para uma imagem)
+A) primeira alternativa
+B) segunda alternativa
+C) terceira alternativa
+D) quarta alternativa
+GABARITO: R0FCOkM=
+FIM
+
+QUESTAO
+PERGUNTA: outra pergunta, sem enunciado...
+A) ...
+B) ...
+GABARITO: R0FCOk8=
+FIM
+
+Regras:
+- MATERIA e ATIVIDADE valem para todas as QUESTAO do texto colado.
+- ENUNCIADO é opcional; use só quando houver um texto-base separado da pergunta.
+- GABARITO nunca é a letra "solta" — é um código gerado com ROT13 + Base64,
+  para você não ver a resposta sem querer. O app decodifica sozinho.`;
+
+/* ============ QUIZ ============ */
+let quizState = null;
+
+document.getElementById('btnQuizBack').addEventListener('click', ()=>{
+  if(confirm('Sair do quiz? O progresso desta tentativa será perdido.')){
+    showView('dashboard'); renderAll();
+  }
+});
+
+function updateLiveCounters(){
+  const a = quizState.acertos;
+  document.getElementById('quizAcertosLive').innerHTML = `Acertos: <b>${a}</b>`;
+  document.getElementById('quizAcertosFooter').textContent = a;
+}
+
+function startQuiz(materia, atividade){
+  const act = state.subjects[materia][atividade];
+  if(!act || act.questions.length===0) return;
+  const sessionQuestions = shuffle(act.questions);
+  quizState = {
+    materia, atividade,
+    questions: sessionQuestions,
+    idx: 0,
+    acertos: 0,
+    erros: 0,
+    current: null
+  };
+  showView('quiz');
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion(){
+  const q = quizState.questions[quizState.idx];
+  const total = quizState.questions.length;
+  const num = quizState.idx + 1;
+
+  document.getElementById('quizTitle').textContent = quizState.atividade;
+  document.getElementById('quizMateria').textContent = quizState.materia;
+  document.getElementById('quizQNum').textContent = `QUESTÃO ${num} DE ${total}`;
+  document.getElementById('quizProgressBar').style.width = ((num-1)/total*100)+'%';
+  updateLiveCounters();
+
+  const enBox = document.getElementById('enunciadoBox');
+  enBox.innerHTML = q.enunciado
+    ? `<div class="enunciado-box">${nl2br(q.enunciado)}</div>` : '';
+
+  document.getElementById('perguntaText').textContent = q.pergunta;
+
+  const img = document.getElementById('quizImg');
+  if(q.imagem){
+    img.src=q.imagem; img.style.display='block';
+    img.onerror=()=>{ img.style.display='none'; };
+  } else { img.style.display='none'; }
+
+  // embaralha opções mantendo rastro da letra original
+  const decodedCorrectLetter = decodeGab(q.gab);
+  const shuffledOpts = shuffle(q.options.map(o=>({ text:o.text, origLetter:o.letter })));
+  const correctIndex = shuffledOpts.findIndex(o=>o.origLetter===decodedCorrectLetter);
+
+  quizState.current = { correctIndex, selectedIndex: null, revealed: false };
+
+  const list = document.getElementById('optList');
+  list.innerHTML='';
+  const letters = 'ABCDEFGH';
+  shuffledOpts.forEach((opt, idx)=>{
+    const b = document.createElement('button');
+    b.className = 'opt-btn';
+    b.dataset.idx = idx;
+    b.innerHTML = `<span class="opt-letter">${letters[idx]}</span><span>${escapeHtml(opt.text)}</span>`;
+    b.addEventListener('click', ()=> selectOption(idx));
+    list.appendChild(b);
+  });
+
+  // botão Responder: começa desativado
+  const btnR = document.getElementById('btnResponder');
+  btnR.textContent = 'Responder';
+  btnR.className = 'btn-responder'; // sem .ready nem .next-mode
+}
+
+function selectOption(idx){
+  if(quizState.current.revealed) return;
+  quizState.current.selectedIndex = idx;
+
+  // destaca selecionado, remove dos outros
+  document.querySelectorAll('#optList .opt-btn').forEach(b=>{
+    const i = parseInt(b.dataset.idx);
+    b.classList.toggle('selected', i===idx);
+  });
+
+  // ativa botão Responder
+  const btnR = document.getElementById('btnResponder');
+  btnR.className = 'btn-responder ready';
+}
+
+document.getElementById('btnResponder').addEventListener('click', ()=>{
+  const btnR = document.getElementById('btnResponder');
+  const cur = quizState.current;
+
+  if(!cur.revealed){
+    // --- FASE: confirmar resposta ---
+    if(cur.selectedIndex === null) return;
+    cur.revealed = true;
+
+    const correct = cur.selectedIndex === cur.correctIndex;
+    if(correct){ quizState.acertos++; }
+    else{ quizState.erros++; }
+    updateLiveCounters();
+
+    document.querySelectorAll('#optList .opt-btn').forEach(b=>{
+      const i = parseInt(b.dataset.idx);
+      b.classList.add('locked');
+      b.classList.remove('selected');
+      if(i === cur.correctIndex){ b.classList.add('correct'); }
+      else if(i === cur.selectedIndex && !correct){ b.classList.add('wrong'); }
+      else{ b.classList.add('dimmed'); }
+    });
+
+    const isLast = quizState.idx >= quizState.questions.length - 1;
+    btnR.textContent = isLast ? 'Ver resultado →' : 'Próxima questão →';
+    btnR.className = 'btn-responder next-mode';
+
+    // avança barra de progresso para o estado atual
+    const pct = ((quizState.idx+1)/quizState.questions.length)*100;
+    document.getElementById('quizProgressBar').style.width = pct+'%';
+
+  } else {
+    // --- FASE: avançar ---
+    quizState.idx++;
+    if(quizState.idx >= quizState.questions.length){ finishQuiz(); }
+    else{ renderQuizQuestion(); }
+  }
+});
+function finishQuiz(){
+  const total = quizState.questions.length;
+  const nota = total ? (quizState.acertos/total)*10 : 0;
+  const act = state.subjects[quizState.materia][quizState.atividade];
+  act.attempts.push({ date: new Date().toISOString(), acertos: quizState.acertos, erros: quizState.erros, total, nota });
+  saveState();
+
+  document.getElementById('resultActName').textContent = `${quizState.atividade} — ${quizState.materia}`;
+  document.getElementById('resultNota').textContent = nota.toFixed(1)+'/10';
+  document.getElementById('resAcertos').textContent = quizState.acertos;
+  document.getElementById('resErros').textContent = quizState.erros;
+  showView('result');
+  renderAll();
+}
+document.getElementById('btnBackDash').addEventListener('click', ()=>{ showView('dashboard'); renderAll(); });
+
+/* ============ BACKUP / RESET ============ */
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'samquiz-backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('fileBackup').addEventListener('change', (e)=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed.subjects) throw new Error('formato inválido');
+      if(confirm('Isso vai SUBSTITUIR todo o banco atual pelo backup selecionado. Continuar?')){
+        state = parsed;
+        saveState();
+        renderAll();
+        alert('Backup importado com sucesso.');
+      }
+    }catch(err){ alert('Arquivo de backup inválido.'); }
+  };
+  reader.readAsText(f,'utf-8');
+  e.target.value='';
+});
+document.getElementById('btnWipe').addEventListener('click', ()=>{
+  if(confirm('Isso vai apagar TODAS as matérias, questões e tentativas salvas neste navegador. Tem certeza?')){
+    state = { subjects: {} };
+    saveState();
+    renderAll();
+    showView('dashboard');
+  }
+});
+
+renderAll();
+</script>
+</body>
+</html>
